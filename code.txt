@@ -1,0 +1,128 @@
+ # Add Menu Dropdowns
+import customtkinter as ctk
+import tkinter as tk
+from tkinter import messagebox
+
+app_state = {}
+status_badge = None
+start_pattern = (None, None, None)
+
+def create_main_page_menu(menu_strip):
+    add_menu_button(
+        menu_strip,
+        "File",
+        [
+            ("Restart Workspace", restart_patterns),
+            ("Logout to Login Screen", handle_logout),
+            "---",
+            ("Exit Application", root.destroy),
+        ],
+    )
+
+    add_menu_button(
+        menu_strip,
+        "Patterns",
+        [
+            ("Play / Pause Animations", toggle_pause),
+            ("Replay Spiral (Block 1)", restart_patterns),
+            "---",
+            ("Clear All Screens", clear_all_canvases),
+        ],
+    )
+
+    add_menu_button(
+        menu_strip,
+        "Tools",
+        [
+            ("Saved Wi-Fi Passwords", lambda: open_wifi_tool_popup(menu_strip.winfo_toplevel())),
+            ("System Status Info", lambda: messagebox.showinfo("Status", "All 4 Render Engines Online.")),
+        ],
+    )
+
+    add_menu_button(
+        menu_strip,
+        "View",
+        [
+            ("Dark Theme (Default)", lambda: set_theme("dark")),
+            ("Light Theme", lambda: set_theme("light")),
+        ],
+    )
+
+    add_menu_button(
+        menu_strip,
+        "Help",
+        [
+            ("About NEXUS HUB", lambda: messagebox.showinfo("About", "NEXUS HUB v1.0\n4-Block Python Control Center")),
+        ],
+    )
+
+def add_menu_button(menu_strip, text, items):
+    btn = ctk.CTkButton(
+        menu_strip,
+        text=f"{text} ▾",
+        width=95,
+        height=28,
+        corner_radius=6,
+        fg_color="transparent",
+        hover_color="#1E3A8A",
+        text_color="#E2E8F0",
+        font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
+    )
+    btn.pack(side="left", padx=(10, 2), pady=3)
+    create_dropdown_menu(btn, items)
+
+def create_dropdown_menu(parent_btn, items):
+    popup = tk.Menu(
+        root,
+        tearoff=0,
+        bg=CARD_BG,
+        fg="#F8FAFC",
+        activebackground="#2563EB",
+        activeforeground="#FFFFFF",
+        bd=1,
+        font=("Segoe UI", 10),
+    )
+    for item in items:
+        if item == "---":
+            popup.add_separator()
+        else:
+            label, cmd = item
+            popup.add_command(label=f"  {label}  ", command=cmd)
+
+    def show_menu():
+        x = parent_btn.winfo_rootx()
+        y = parent_btn.winfo_rooty() + parent_btn.winfo_height()
+        popup.tk_popup(x, y)
+
+    parent_btn.configure(command=show_menu)
+ # Menu Actions
+def toggle_pause():
+    app_state["running"] = not app_state["running"]
+    if app_state["running"]:
+        status_badge.configure(text="●  LIVE ENGINE ACTIVE", text_color="#4ADE80")
+    else:
+        status_badge.configure(text="❚❚  ENGINE PAUSED", text_color="#FACC15")
+
+def restart_patterns():
+    app_state["running"] = True
+    status_badge.configure(text="●  LIVE ENGINE ACTIVE", text_color="#4ADE80")
+    if app_state["screens"]:
+        start_pattern(app_state["screens"][0], app_state["pens"][0], app_state)
+
+def clear_all_canvases():
+    app_state["running"] = False
+    status_badge.configure(text="■  CANVASES CLEARED", text_color="#94A3B8")
+    for p in app_state["pens"]:
+        p.clear()
+
+def set_theme(mode):
+    ctk.set_appearance_mode(mode)
+
+def handle_logout():
+    app_state["running"] = False
+    root.destroy()
+    try:
+        from login.login_page import ModernLoginApp
+        ModernLoginApp().mainloop()
+    except ImportError:
+        pass
